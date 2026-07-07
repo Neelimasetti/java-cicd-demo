@@ -6,12 +6,16 @@ pipeline {
         maven 'maven3'
     }
 
+    environment {
+        IMAGE_NAME = "neelimasetti/java-cicd-demo:v1"
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/Neelimasetti/java-cicd-demo.git'
+                url: 'https://github.com/Neelimasetti/java-cicd-demo.git'
             }
         }
 
@@ -23,15 +27,35 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t java-cicd-demo:v1 .'
+                sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Docker Hub Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh 'docker push $IMAGE_NAME'
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                docker rm -f java-app || true
-                docker run -d --name java-app -p 8081:8081 java-cicd-demo:v1
+                kubectl apply -f deployment.yaml
+                kubectl apply -f service.yaml
                 '''
             }
         }
