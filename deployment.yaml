@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-cicd-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-cicd-demo
+  template:
+    metadata:
+      labels:
+        app: java-cicd-demo
+    spec:
+      containers:
+      - name: java-cicd-demo
+        image: neelimasetti/java-cicd-demo:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
